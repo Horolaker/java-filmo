@@ -3,26 +3,23 @@ package ru.yandex.practicum.filmorate.controller;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.validation.Validation;
+import static ru.yandex.practicum.filmorate.validation.Validation.validationUser;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 
 @RestController
 public class UserController {
-    Validation validation = new Validation();
-    private LinkedHashMap<Integer, User> users = new LinkedHashMap<>();
+    private final Map<Integer, User> users = new HashMap<>();
     private Integer generatedUserId = 1;
 
     @GetMapping("/users") //Вывод списка юзеров
-    public List<User> findAllUsers() {
-        return new ArrayList<>(users.values());
+    public Collection<User> findAllUsers() {
+        return users.values();
     }
 
     @PostMapping(value = "/users") //Добавляет юзера в список
     public User addUser(@RequestBody User user) {
-        validation.validationUser(user);
+        validationUser(user);
         user.setId(generatedUserId++);
         users.put(user.getId(), user);
         return user;
@@ -30,7 +27,7 @@ public class UserController {
 
     @PutMapping("/users") //Обновляет информацию о юзере
     public User update(@RequestBody User user) {
-        validation.validationUser(user);
+        validationUser(user);
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
             return user;

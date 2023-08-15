@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,7 +25,7 @@ class UserControllerTest {
 
     @Test
     void findAllUsers() { // Тест вывода списка Users
-        List<User> allUsersCreated = userController.findAllUsers();
+        Collection<User> allUsersCreated = userController.findAllUsers();
         assertNotNull(allUsersCreated);
     }
 

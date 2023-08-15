@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Collection;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,7 +25,7 @@ class FilmControllerTest {
 
     @Test
     void findAll() { // Тест вывода списка Films
-        List<Film> allFilmsCreated = filmController.findAll();
+        Collection<Film> allFilmsCreated = filmController.findAll();
         assertNotNull(allFilmsCreated);
     }
 

@@ -7,7 +7,7 @@ import ru.yandex.practicum.filmorate.model.User;
 import java.time.LocalDate;
 
 public class Validation {
-    public void validationFilm(Film film) { //Проверка валидности фильмов
+    public static void validationFilm(Film film) { //Проверка валидности фильмов
         if (film.getName() == null || film.getName().isBlank()) {
             throw new ValidationException("Неверное название");
         } else if (film.getDescription() == null || film.getDescription().length() > 200) {
@@ -19,7 +19,7 @@ public class Validation {
         }
     }
 
-    public void validationUser(User user) { //Проверка валидности user
+    public static void validationUser(User user) { //Проверка валидности user
         if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
             throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
         }
