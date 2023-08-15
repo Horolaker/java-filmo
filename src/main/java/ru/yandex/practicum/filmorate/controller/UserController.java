@@ -22,7 +22,7 @@ public class UserController {
 
     @PostMapping(value = "/users") //Добавляет юзера в список
     public User addUser(@RequestBody User user) {
-        validation.validatedUser(user);
+        validation.validationUser(user);
         user.setId(generatedUserId++);
         users.put(user.getId(), user);
         return user;
@@ -30,7 +30,7 @@ public class UserController {
 
     @PutMapping("/users") //Обновляет информацию о юзере
     public User update(@RequestBody User user) {
-        validation.validatedUser(user);
+        validation.validationUser(user);
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
             return user;
