@@ -1,23 +1,19 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.validation.Validation;
 
-import javax.validation.Valid;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 @RestController
 public class UserController {
+    Validation validation = new Validation();
     private LinkedHashMap<Integer, User> users = new LinkedHashMap<>();
     private Integer generatedUserId = 1;
-    private final Logger log = LoggerFactory.getLogger(UserController.class);
 
     @GetMapping("/users") //Вывод списка юзеров
     public List<User> findAllUsers() {
@@ -25,38 +21,21 @@ public class UserController {
     }
 
     @PostMapping(value = "/users") //Добавляет юзера в список
-    public User addUser(@Valid @RequestBody User user) {
-        isValidUser(user);
+    public User addUser(@RequestBody User user) {
+        validation.validatedUser(user);
         user.setId(generatedUserId++);
         users.put(user.getId(), user);
         return user;
     }
 
-    @PutMapping(value = "/users") //Обновляет информацию о юзере
-    public User update(@Valid @RequestBody User user) {
-        isValidUser(user);
+    @PutMapping("/users") //Обновляет информацию о юзере
+    public User update(@RequestBody User user) {
+        validation.validatedUser(user);
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
+            return user;
         } else {
-            notFound();
+            throw new NotFoundException("Не найдено.");
         }
-        return user;
-    }
-
-    private void isValidUser(User user) { //Проверка валидности user
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new ValidationException("Указан неправильный e-mail.");
-        } else if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
-            throw new ValidationException("Логин пустой или содержит пробелы.");
-        } else if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-        if (user.getBirthday() == null || user.getBirthday().isAfter(LocalDate.now())) {
-            throw new ValidationException("Указана неправильная дата рождения.");
-        }
-    }
-
-    private void notFound() {
-        throw new NotFoundException("Не найдено.");
     }
 }
