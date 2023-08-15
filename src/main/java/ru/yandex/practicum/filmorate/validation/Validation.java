@@ -22,11 +22,14 @@ public class Validation {
     public void validationUser(User user) { //Проверка валидности user
         if (user.getEmail() == null || user.getEmail().isBlank() || !user.getEmail().contains("@")) {
             throw new ValidationException("Электронная почта не может быть пустой и должна содержать символ @");
-        } else if (user.getLogin() == null || user.getLogin().isBlank()) {
+        }
+        if (user.getLogin() == null || user.getLogin().isBlank()) {
             throw new ValidationException("Логин не может быть пустым и содержать пробелы");
-        } else if (user.getName() == null || user.getName().isBlank()) {
+        }
+        if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
-        } else if (user.getBirthday().isAfter(LocalDate.now())) {
+        }
+        if (user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Дата рождения не может быть в будущем");
         }
     }
