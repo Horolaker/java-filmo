@@ -36,6 +36,7 @@ public class FilmController {
     public Film update(@RequestBody Film film) {
         return filmService.updateFilm(film);
     }
+
     @GetMapping("/{id}") // Возвращает пользователя по Id
     public Film getFilm(@PathVariable Integer id) {
         return filmService.getFilmById(id);
