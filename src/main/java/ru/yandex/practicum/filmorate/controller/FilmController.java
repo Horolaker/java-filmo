@@ -4,9 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 
 import java.util.*;
@@ -25,17 +25,21 @@ public class FilmController {
 
     @GetMapping //Возвращает список фильмов
     public List<Film> findAll() {
-        return filmService.getAllFilms();
+        return filmService.findAllFilms();
     }
 
     @PostMapping //Добавляет фильм в список
     public Film add(@RequestBody Film film) {
-        return filmService.create(film);
+        return filmService.addFilm(film);
     }
 
     @PutMapping //Обновляет информацию о фильме
     public Film update(@RequestBody Film film) {
-        return filmService.update(film);
+        return filmService.updateFilm(film);
+    }
+    @GetMapping("/{id}") // Возвращает пользователя по Id
+    public Film getFilm(@PathVariable Integer id) {
+        return filmService.getFilmById(id);
     }
 
     @PutMapping("/{id}/like/{userId}") // Добавляет "лайк"
@@ -45,16 +49,11 @@ public class FilmController {
 
     @DeleteMapping("/{id}/like/{userId}") // Удаляет "лайк"
     public void deleteLike(@PathVariable Integer id, @PathVariable Integer userId) {
-        filmService.deleteLike(id, userId);
+        filmService.removeLike(filmService.getFilmById(id), userId);
     }
 
     @GetMapping("/popular") // Возвращяет список популярных фильмов
     public List<Film> getPopular(@RequestParam(name = "count", defaultValue = "10") @Positive Integer count) {
-        return filmService.getPopular(count);
-    }
-
-    @DeleteMapping("/{id}") // Удаляет фильм по Id
-    public Film delete(@PathVariable @NotNull Integer id) {
-        return filmService.delete(id);
+        return filmService.getTopTenFilms(count);
     }
 }

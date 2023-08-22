@@ -1,62 +1,71 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDate;
+import java.util.*;
 
-@Slf4j
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    private final Map<Integer, User> users = new HashMap<>();
-    private int generateId = 1;
+    private HashMap<Integer, User> users = new LinkedHashMap<>();
+    private Integer generatedUserId = 1;
 
     @Override
-    public User createUser(User user) {
-        log.debug("создаем пользователя: {}", user);
-        user.setId(generateId++);
+    public Map<Integer, User> getUsers() {
+        return users;
+    }
+
+    @Override
+    public User getUserById(Integer id) {
+        if (users.get(id) == null) {
+            throw new NotFoundException("Пользователь не найден.");
+        } else {
+            return users.get(id);
+        }
+    }
+
+    @Override
+    public User addUser(User user) {
+        isValidUser(user);
+        user.setId(generatedUserId++);
         users.put(user.getId(), user);
         return user;
     }
 
     @Override
     public User updateUser(User user) {
-        log.debug("обновляем пользователя: {}", user);
+        isValidUser(user);
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
-            return user;
         } else {
-            throw new RuntimeException("id не найден");
+            notFound();
         }
+        return user;
     }
 
     @Override
-    public List<User> getAllUsers() {
-        log.debug("получаем всех пользователей");
+    public List<User> findAllUsers() {
         return new ArrayList<>(users.values());
     }
 
     @Override
-    public User getUser(Integer userId) {
-        log.debug("получаем пользователя по id: {}", userId);
-        if (!users.containsKey(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + userId + " не найден!");
+    public void isValidUser(User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ValidationException("Указан неправильный e-mail.");
+        } else if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
+            throw new ValidationException("Логин пустой или содержит пробелы.");
+        } else if (user.getName() == null || user.getName().isBlank()) {
+            user.setName(user.getLogin());
         }
-        return users.get(userId);
+        if (user.getBirthday() == null || user.getBirthday().isAfter(LocalDate.now())) {
+            throw new ValidationException("Указана неправильная дата рождения.");
+        }
     }
 
-    @Override
-    public User delete(Integer userId) {
-        log.debug("удаляем пользователя по id: {}", userId);
-        if (!users.containsKey(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Пользователь с id=" + userId + " не найден!");
-        }
-        return users.remove(userId);
+    public void notFound() {
+        throw new NotFoundException("Не найдено.");
     }
 }

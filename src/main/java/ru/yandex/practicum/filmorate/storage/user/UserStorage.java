@@ -2,17 +2,20 @@ package ru.yandex.practicum.filmorate.storage.user;
 
 import ru.yandex.practicum.filmorate.model.User;
 
-import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 public interface UserStorage {
-    User createUser(@Valid User user);
+    public Map<Integer, User> getUsers();
 
-    User updateUser(@Valid User user);
+    User getUserById(Integer id);
 
-    List<User> getAllUsers();
+    User addUser(User user);
 
-    User getUser(Integer userId);
+    User updateUser(User user);
 
-    User delete(Integer userId);
+    List<User> findAllUsers();
+
+    void isValidUser(User user);
+
 }

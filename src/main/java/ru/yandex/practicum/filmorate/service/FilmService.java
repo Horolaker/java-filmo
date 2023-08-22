@@ -1,69 +1,85 @@
 package ru.yandex.practicum.filmorate.service;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.*;
 
-@Service
 @Slf4j
-public class FilmService {
-    private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
+@Service
+@AllArgsConstructor
+public class FilmService implements FilmServiceInterface {
+    public final FilmStorage filmStorage;
 
-    public FilmService(FilmStorage filmStorage, UserStorage userStorage) {
-        this.filmStorage = filmStorage;
-        this.userStorage = userStorage;
-    }
-
-    public List<Film> getAllFilms() {
-        return filmStorage.getAllFilms();
-    }
-
-    public Film create(Film film) {
-        return filmStorage.create(film);
-    }
-
-    public Film update(Film film) {
-        return filmStorage.update(film);
-    }
-
-    public Film getFilmById(Integer filmId) {
-        return filmStorage.getFilm(filmId);
-    }
-
-    public Film delete(Integer filmId) {
-        log.debug("удаляем фильм id:{}", filmId);
-        return filmStorage.delete(filmId);
-    }
-
-    public List<Film> getPopular(Integer count) {
-        log.info("получаем список фильмов по количеству лайков :{}", count);
-        return filmStorage.getAllFilms().stream()
-                .sorted((o1, o2) -> o2.getLikes().size() - o1.getLikes().size())
-                .limit(count)
-                .collect(Collectors.toList());
-    }
-
-    public void addLike(Integer filmId, Integer userId) {
-        log.debug("добавляем лайк фильму id:{}", filmId);
-        Film film = filmStorage.getFilm(filmId);
-        User user = userStorage.getUser(userId);
-        film.getLikes().add(user.getId());
-    }
-
-    public void deleteLike(Integer filmId, Integer userId) {
-        log.debug("удаляем лайк с фильма id:{}", filmId);
-        Film film = filmStorage.getFilm(filmId);
-        if (!film.getLikes().remove(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Лайк от пользователя c id=" + userId + " не найден!");
+    @Override
+    public boolean addLike(Integer filmId, Integer userId) {
+        Film film = filmStorage.getFilmById(filmId);
+        filmStorage.isValidFilm(film);
+        if (film.getLikes() == null) {
+            film.setLikes(new TreeSet<>());
         }
+        if (userId != null) {
+            filmStorage.getFilms().get(filmId).getLikes().add(userId);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean removeLike(Film film, Integer userId) {
+        filmStorage.isValidFilm(film);
+        if (userId != null && userId > 0) {
+            Film existingFilm = filmStorage.getFilmById(film.getId());
+            if (existingFilm != null && existingFilm.getLikes() != null) {
+                existingFilm.getLikes().remove(userId);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public List<Film> getTopTenFilms(Integer count) {
+        if (filmStorage.getFilms() != null) {
+            Comparator<Film> likeComparator = Comparator.comparingInt(film -> {
+                if (film.getLikes() != null) {
+                    return -film.getLikes().size();
+                } else {
+                    return 0;
+                }
+            });
+
+            List<Film> films = new ArrayList<>(filmStorage.getFilms().values());
+            films.sort(likeComparator);
+            return films.subList(0, Math.min(count, films.size()));
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
+    public Film addFilm(Film film) {
+        log.info("Adding film " + film.getId());
+        return filmStorage.addFilm(film);
+    }
+
+    @Override
+    public Film updateFilm(Film film) {
+        log.info("Updating film " + film.getId());
+        return filmStorage.updateFilm(film);
+    }
+
+    @Override
+    public List<Film> findAllFilms() {
+        log.info("Finding all films ");
+        return filmStorage.findAllFilms();
+    }
+
+    @Override
+    public Film getFilmById(Integer id) {
+        return filmStorage.getFilmById(id);
     }
 }

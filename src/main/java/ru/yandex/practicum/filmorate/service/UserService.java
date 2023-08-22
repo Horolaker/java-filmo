@@ -1,80 +1,122 @@
 package ru.yandex.practicum.filmorate.service;
-
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.TreeSet;
 
-@Service
 @Slf4j
-public class UserService {
-    private final UserStorage userStorage;
+@Service
+@AllArgsConstructor
+public class UserService implements UserServiceInterface {
+    public final UserStorage userStorage;
 
-    public UserService(UserStorage userStorage) {
-        this.userStorage = userStorage;
+    @Override
+    public User addUser(User user) {
+        log.info("Adding user " + user.getId());
+        return userStorage.addUser(user);
     }
 
-    public User createUser(User user) {
-        return userStorage.createUser(user);
-    }
-
+    @Override
     public User updateUser(User user) {
+        log.info("Updating user " + user.getId());
         return userStorage.updateUser(user);
     }
 
-    public List<User> getAllUsers() {
-        return userStorage.getAllUsers();
+    @Override
+    public List<User> findAllUsers() {
+        log.info("Finding all users");
+        return userStorage.findAllUsers();
     }
 
-    public User getUser(Integer id) {
-        return userStorage.getUser(id);
-    }
-
-    public User delete(Integer id) {
-        return userStorage.delete(id);
-    }
-
-    public void addFriend(Integer userId, Integer friendId) {
-        log.debug("добавляем друга по id: {}", friendId);
-        if (userId.equals(friendId)) {
-            log.debug("Попытка добавить себя в друзья.");
-            return;
+    @Override
+    public boolean addFriend(Integer userId, Integer friendId) {
+        isValidId(userId);
+        isValidId(friendId);
+        User user = getUserById(userId);
+        User friend = getUserById(friendId);
+        userStorage.isValidUser(user);
+        userStorage.isValidUser(friend);
+        if (user.getFriends() == null) {
+            user.setFriends(new TreeSet<>());
         }
-        User user = userStorage.getUser(userId);
-        User friend = userStorage.getUser(friendId);
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+        if (friend.getFriends() == null) {
+            friend.setFriends(new TreeSet<>());
+        }
+        if (userStorage.getUsers().containsValue(user) && userStorage.getUserById(friendId) != null) {
+            userStorage.getUserById(userId).getFriends().add(friendId);
+            userStorage.getUserById(friendId).getFriends().add(user.getId());
+            userStorage.updateUser(user);
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    public void deleteFriend(Integer userId, Integer friendId) {
-        log.debug("удаляем друга по id: {}", friendId);
-        User user = userStorage.getUser(userId);
-        User friend = userStorage.getUser(friendId);
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+    @Override
+    public boolean removeFriend(User user, Integer friendId) {
+        userStorage.isValidUser(user);
+        if (userStorage.getUsers().containsValue(user) && userStorage.getUsers().get(friendId) != null) {
+            userStorage.getUsers().get(user.getId()).getFriends().remove(friendId);
+            userStorage.getUsers().get(friendId).getFriends().remove(user.getId());
+            return true;
+        } else {
+            return false;
+        }
     }
 
-    public List<User> getFriends(Integer userId) {
-        log.debug("получаем список друзей пользователя по id: {}", userId);
-        Set<Integer> friendIds = userStorage.getUser(userId).getFriends();
-        return friendIds.stream().map(userStorage::getUser).collect(Collectors.toList());
+    @Override
+    public ArrayList<User> getMutualFriends(Integer userId, Integer otherUserId) {
+        User user = getUserById(userId);
+        User otherUser = getUserById(otherUserId);
+        userStorage.isValidUser(user);
+        userStorage.isValidUser(otherUser);
+        TreeSet<Integer> userFriends = (TreeSet<Integer>) userStorage.getUserById(userId).getFriends();
+        TreeSet<Integer> otherUserFriends = (TreeSet<Integer>) userStorage.getUserById(otherUserId).getFriends();
+
+        ArrayList<User> mutualFriendsList = new ArrayList<>();
+        if (userFriends != null && otherUserFriends != null) {
+            TreeSet<Integer> mutualFriends = new TreeSet<>(userFriends);
+            mutualFriends.retainAll(otherUserFriends);
+
+            for (int friendId : mutualFriends) {
+                User mutualFriend = userStorage.getUserById(friendId);
+                if (mutualFriend != null) {
+                    mutualFriendsList.add(mutualFriend);
+                }
+            }
+            return mutualFriendsList;
+        } else {
+            return mutualFriendsList;
+        }
+
     }
 
-    public List<User> getCommonFriends(Integer firstUserId, Integer secondUserId) {
-        log.debug("получаем список общих друзей по id {} и {}", firstUserId, secondUserId);
-        User firstUser = userStorage.getUser(firstUserId);
-        User secondUser = userStorage.getUser(secondUserId);
-        Set<Integer> firstUserFriends = new HashSet<>(firstUser.getFriends());
-        firstUserFriends.retainAll(secondUser.getFriends());
-        return firstUserFriends.stream()
-                .map(userStorage::getUser)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+    @Override
+    public User getUserById(Integer id) {
+        return userStorage.getUserById(id);
+    }
+
+    @Override
+    public List<User> findAllUserFriends(Integer userId) {
+        User user = getUserById(userId);
+        ArrayList<User> listOfFriends = new ArrayList<>();
+        ArrayList<Integer> listOfFriendsIds = new ArrayList<>(user.getFriends());
+        for (Integer id : listOfFriendsIds) {
+            User friend = getUserById(id);
+            listOfFriends.add(friend);
+        }
+        return listOfFriends;
+    }
+
+    public void isValidId(Integer id) {
+        if (id <= 0 && userStorage.getUserById(id) != null && userStorage.getUsers().containsKey(id)) {
+            throw new ValidationException("Указан неправильный id.");
+        }
     }
 }

@@ -1,63 +1,74 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.server.ResponseStatusException;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
-@Slf4j
 public class InMemoryFilmStorage implements FilmStorage {
-    private final Map<Integer, Film> films = new HashMap<>();
-    private int generateId = 1;
+    private HashMap<Integer, Film> films = new HashMap<>();
+    private Integer generatedFilmId = 1;
 
     @Override
-    public List<Film> getAllFilms() {
-        log.debug("получаем все фильмы");
-        return new ArrayList<>(films.values());
+    public Map<Integer, Film> getFilms() {
+        return films;
     }
 
     @Override
-    public Film create(Film film) {
-        log.debug("добавляем фильм: {}", film);
-        film.setId(generateId++);
+    public Film addFilm(Film film) {
+        isValidFilm(film);
+        film.setId(generatedFilmId++);
         films.put(film.getId(), film);
         return film;
     }
 
     @Override
-    public Film update(Film film) {
-        log.debug("обновляем фильм: {}", film);
+    public Film updateFilm(Film film) {
+        isValidFilm(film);
         if (films.containsKey(film.getId())) {
             films.put(film.getId(), film);
+            return film;
         } else {
-            log.debug("фильм с {} id не найден", film.getId());
-            throw new RuntimeException("фильм не найден");
+            notFound();
         }
         return film;
     }
 
     @Override
-    public Film getFilm(Integer filmId) {
-        log.debug("получение фильма по id {}", filmId);
-        if (!films.containsKey(filmId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "фильм с id: " + filmId + " не найден!");
-        }
-        return films.get(filmId);
+    public List<Film> findAllFilms() {
+        return new ArrayList<>(films.values());
     }
 
     @Override
-    public Film delete(Integer filmId) {
-        log.debug("удаление фильма по id {}", filmId);
-        if (!films.containsKey(filmId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "фильм с id: " + filmId + " не найден!");
+    public void isValidFilm(Film film) {
+        if (film.getName() == null || film.getName().isBlank()) {
+            throw new ValidationException("Неверное название");
+        } else if (film.getDescription() == null || film.getDescription().length() > 200) {
+            throw new ValidationException("Описание превышает 200 символов.");
+        } else if (film.getReleaseDate() == null || film.getReleaseDate().isBefore(LocalDate.parse("1895-12-28"))) {
+            throw new ValidationException("Неверная дата релиза.");
+        } else if (film.getDuration() == null || film.getDuration() <= 0) {
+            throw new ValidationException("Указана неверная продолжительность фильма.");
         }
-        return films.remove(filmId);
+    }
+
+    @Override
+    public Film getFilmById(Integer id) {
+        if (films.get(id) == null) {
+            throw new NotFoundException("Такого фильма нет.");
+        } else {
+            return films.get(id);
+        }
+    }
+
+    public void notFound() {
+        throw new NotFoundException("Не найдено.");
     }
 }

@@ -23,12 +23,12 @@ public class UserController {
 
     @GetMapping("/users") //Вывод списка юзеров
     public List<User> findAllUsers() {
-        return userService.getAllUsers();
+        return userService.findAllUsers();
     }
 
     @PostMapping(value = "/users") //Добавляет юзера в список
     public User addUser(@RequestBody User user) {
-        return userService.createUser(user);
+        return userService.addUser(user);
     }
 
     @PutMapping("/users") //Обновляет информацию о юзере
@@ -38,17 +38,12 @@ public class UserController {
 
     @GetMapping("/{id}") // Возвращает пользователя по Id
     public User getUser(@PathVariable Integer id) {
-        return userService.getUser(id);
-    }
-
-    @DeleteMapping("/{id}") // Удаляет пользователя по Id
-    public User delete(@PathVariable @NotNull Integer id) {
-        return userService.delete(id);
+        return userService.getUserById(id);
     }
 
     @GetMapping("/{id}/friends") // Возвращает список пользователей, являющихся его друзьями.
     public List<User> getFriends(@PathVariable Integer id) {
-        return userService.getFriends(id);
+        return userService.findAllUserFriends(id);
     }
 
     @PutMapping("/{id}/friends/{friendId}") // Добавление в друзья.
@@ -58,11 +53,11 @@ public class UserController {
 
     @DeleteMapping("/{id}/friends/{friendId}") // Удаление из друзей.
     public void deleteFriend(@PathVariable @NotNull Integer id, @PathVariable @NotNull Integer friendId) {
-        userService.deleteFriend(id, friendId);
+        userService.removeFriend(userService.getUserById(id), friendId);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}") // Возвращает список друзей, общих с другим пользователем.
     public List<User> getCommonFriends(@PathVariable @NotNull Integer id, @PathVariable @NotNull Integer otherId) {
-        return userService.getCommonFriends(id, otherId);
+        return userService.getMutualFriends(id, otherId);
     }
 }

@@ -2,18 +2,19 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import ru.yandex.practicum.filmorate.model.Film;
 
-import javax.validation.Valid;
 import java.util.List;
+import java.util.Map;
 
 public interface FilmStorage {
+    Map<Integer, Film> getFilms();
 
-    List<Film> getAllFilms();
+    Film addFilm(Film film);
 
-    Film create(@Valid Film film);
+    Film updateFilm(Film film);
 
-    Film update(@Valid Film film);
+    List<Film> findAllFilms();
 
-    Film getFilm(Integer filmId);
+    void isValidFilm(Film film);
 
-    Film delete(Integer filmId);
+    Film getFilmById(Integer id);
 }
