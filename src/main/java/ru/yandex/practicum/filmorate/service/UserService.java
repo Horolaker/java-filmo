@@ -41,7 +41,7 @@ public class UserService {
     }
 
     public void addFriend(Integer userId, Integer friendId) {
-        log.debug("добавляем друга по id: {}",friendId);
+        log.debug("добавляем друга по id: {}", friendId);
         if (userId.equals(friendId)) {
             log.debug("Попытка добавить себя в друзья.");
             return;
@@ -53,7 +53,7 @@ public class UserService {
     }
 
     public void deleteFriend(Integer userId, Integer friendId) {
-        log.debug("удаляем друга по id: {}",friendId);
+        log.debug("удаляем друга по id: {}", friendId);
         User user = userStorage.getUser(userId);
         User friend = userStorage.getUser(friendId);
         user.getFriends().remove(friendId);
@@ -61,13 +61,13 @@ public class UserService {
     }
 
     public List<User> getFriends(Integer userId) {
-        log.debug("получаем список друзей пользователя по id: {}",userId);
+        log.debug("получаем список друзей пользователя по id: {}", userId);
         Set<Integer> friendIds = userStorage.getUser(userId).getFriends();
         return friendIds.stream().map(userStorage::getUser).collect(Collectors.toList());
     }
 
     public List<User> getCommonFriends(Integer firstUserId, Integer secondUserId) {
-        log.debug("получаем список общих друзей по id {} и {}",firstUserId, secondUserId);
+        log.debug("получаем список общих друзей по id {} и {}", firstUserId, secondUserId);
         User firstUser = userStorage.getUser(firstUserId);
         User secondUser = userStorage.getUser(secondUserId);
         Set<Integer> firstUserFriends = new HashSet<>(firstUser.getFriends());

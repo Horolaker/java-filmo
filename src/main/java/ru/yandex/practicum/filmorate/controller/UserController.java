@@ -32,6 +32,7 @@ public class UserController {
     public User update(@RequestBody User user) {
         return userService.updateUser(user);
     }
+
     @GetMapping("/{id}") // Возвращает пользователя по Id
     public User getUser(@PathVariable Integer id) {
         return userService.getUser(id);
@@ -48,7 +49,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}/friends/{friendId}") // Добавление в друзья.
-    public void addFriend(@PathVariable  Integer id, @PathVariable Integer friendId) {
+    public void addFriend(@PathVariable Integer id, @PathVariable Integer friendId) {
         userService.addFriend(id, friendId);
     }
 
