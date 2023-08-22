@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -11,6 +12,8 @@ import javax.validation.constraints.Positive;
 import java.util.*;
 
 @RestController
+@Slf4j
+@RequestMapping("/films")
 public class FilmController {
     private final FilmService filmService;
 
@@ -20,17 +23,17 @@ public class FilmController {
     }
 
 
-    @GetMapping("/films") //Возвращает список фильмов
+    @GetMapping //Возвращает список фильмов
     public List<Film> findAll() {
         return filmService.getAllFilms();
     }
 
-    @PostMapping(value = "/films") //Добавляет фильм в список
+    @PostMapping //Добавляет фильм в список
     public Film add(@RequestBody Film film) {
         return filmService.create(film);
     }
 
-    @PutMapping("/films") //Обновляет информацию о фильме
+    @PutMapping //Обновляет информацию о фильме
     public Film update(@RequestBody Film film) {
         return filmService.update(film);
     }
