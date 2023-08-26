@@ -115,8 +115,8 @@ public class UserService implements UserServiceInterface {
         return listOfFriends;
     }
 
-    public void isValidId(Integer id) {
-        if (id <= 0 && userStorage.getUserById(id) != null && userStorage.getUsers().containsKey(id)) {
+    private void isValidId(Integer userId) {
+        if (userId <= 0 && userStorage.getUserById(userId) != null && userStorage.getUsers().containsKey(userId)) {
             throw new ValidationException("Указан неправильный id.");
         }
     }

@@ -11,7 +11,7 @@ import java.util.*;
 
 @Component
 public class InMemoryUserStorage implements UserStorage {
-    private HashMap<Integer, User> users = new LinkedHashMap<>();
+    private Map<Integer, User> users = new LinkedHashMap<>();
     private Integer generatedUserId = 1;
 
     @Override
@@ -22,7 +22,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public User getUserById(Integer id) {
         if (users.get(id) == null) {
-            throw new NotFoundException("Пользователь не найден.");
+            throw new NotFoundException("User с id-" + id + " не найден.");
         } else {
             return users.get(id);
         }
@@ -42,7 +42,7 @@ public class InMemoryUserStorage implements UserStorage {
         if (users.containsKey(user.getId())) {
             users.put(user.getId(), user);
         } else {
-            notFound();
+            throw new NotFoundException("User с id-" + user.getId() + (" не найден!"));
         }
         return user;
     }
@@ -64,10 +64,6 @@ public class InMemoryUserStorage implements UserStorage {
         if (user.getBirthday() == null || user.getBirthday().isAfter(LocalDate.now())) {
             throw new ValidationException("Указана неправильная дата рождения.");
         }
-    }
-
-    public void notFound() {
-        throw new NotFoundException("Не найдено.");
     }
 }
 

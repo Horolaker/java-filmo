@@ -20,9 +20,7 @@ import java.util.List;
 public class UserController {
     @Autowired
     private final UserServiceInterface userService;
-
-
-    private final Logger log = LoggerFactory.getLogger(UserController.class);
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     @GetMapping("/users")
     public List<User> findAllUsers() {

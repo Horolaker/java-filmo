@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Component
 public class InMemoryFilmStorage implements FilmStorage {
-    private HashMap<Integer, Film> films = new HashMap<>();
+    private Map<Integer, Film> films = new HashMap<>();
     private Integer generatedFilmId = 1;
 
     @Override
@@ -34,9 +34,8 @@ public class InMemoryFilmStorage implements FilmStorage {
         isValidFilm(film);
         if (films.containsKey(film.getId())) {
             films.put(film.getId(), film);
-            return film;
         } else {
-            notFound();
+            throw new NotFoundException("Film с id " + film.getId() + (" не найден!"));
         }
         return film;
     }
@@ -62,13 +61,9 @@ public class InMemoryFilmStorage implements FilmStorage {
     @Override
     public Film getFilmById(Integer id) {
         if (films.get(id) == null) {
-            throw new NotFoundException("Такого фильма нет.");
+            throw new NotFoundException("Film с id-" + id + " не найден.");
         } else {
             return films.get(id);
         }
-    }
-
-    public void notFound() {
-        throw new NotFoundException("Не найдено.");
     }
 }
