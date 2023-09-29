@@ -25,7 +25,23 @@ public class DbUserStorageImpl implements DbUserStorage {
     public DbUserStorageImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+    public void populateFriendStatusMap(User user) {
+        String sql = "SELECT friend_id FROM friend_list WHERE user_id = ?";
+        HashMap<Integer, Boolean> friendStatusMap = new HashMap<>();
 
+        jdbcTemplate.query(sql, new Object[]{user.getId()}, (rs) -> {
+            while (rs.next()) {
+                Integer friendId = rs.getInt("friend_id");
+                boolean isMutual = checkMutualFriendship(user.getId(), friendId);
+                friendStatusMap.put(friendId, isMutual);
+            }
+        });
+        user.setFriendshipStatus(friendStatusMap);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public User addUser(User user) {
         if (getUserByLogin(user.getLogin()) != null && getUserByLogin(user.getLogin()).equals(user)) {
@@ -46,15 +62,9 @@ public class DbUserStorageImpl implements DbUserStorage {
         }
     }
 
-    private static HashMap<String, Object> userToRow(User user) {
-        HashMap<String, Object> values = new HashMap<>();
-        values.put("email", user.getEmail());
-        values.put("login", user.getLogin());
-        values.put("name", user.getName());
-        values.put("birthday", user.getBirthday());
-        return values;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public User updateUser(User user) {
         String sqlQuery = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
@@ -74,22 +84,34 @@ public class DbUserStorageImpl implements DbUserStorage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<User> findAllUsers() {
         return jdbcTemplate.query(
                 "SELECT user_id, email, login, name, birthday FROM users", userRowMapper());
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void addFriend(Integer userId, Integer friendId) {
         jdbcTemplate.update("INSERT INTO friend_list (user_id,friend_Id) VALUES(?,?)", userId, friendId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void removeFriend(User user, Integer friendId) {
         jdbcTemplate.update("DELETE FROM friend_list WHERE user_id = ? AND friend_id = ?", user.getId(), friendId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public ArrayList<User> getMutualFriends(Integer userId, Integer otherUserId) {
         List<Integer> user1Friends = jdbcTemplate.query(
@@ -111,6 +133,9 @@ public class DbUserStorageImpl implements DbUserStorage {
         return mutualFriends;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public User getUserById(Integer id) {
         try {
@@ -120,15 +145,25 @@ public class DbUserStorageImpl implements DbUserStorage {
         }
     }
 
-    private User getUserByLogin(String login) {
-        try {
-            String sqlQuery = "SELECT * FROM users WHERE login = ?";
-            return jdbcTemplate.queryForObject(sqlQuery, userRowMapper(), login);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeUser(Integer id) {
+        jdbcTemplate.update("DELETE FROM users WHERE user_id = ? ", id);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void removeAllUsers() {
+        jdbcTemplate.update("DELETE FROM users");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<User> findAllUserFriends(Integer userId) {
         List<Integer> friendsId = jdbcTemplate.query(
@@ -142,6 +177,28 @@ public class DbUserStorageImpl implements DbUserStorage {
         return friends;
     }
 
+    private boolean checkMutualFriendship(Integer userId1, Integer userId2) {
+        String sql = "SELECT COUNT(*) FROM friend_list WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
+        int count = jdbcTemplate.queryForObject(sql, new Object[]{userId1, userId2, userId2, userId1}, Integer.class);
+        return count == 2;
+    }
+
+    private HashMap<String, Object> userToRow(User user) {
+        HashMap<String, Object> values = new HashMap<>();
+        values.put("email", user.getEmail());
+        values.put("login", user.getLogin());
+        values.put("name", user.getName());
+        values.put("birthday", user.getBirthday());
+        return values;
+    }
+    private User getUserByLogin(String login) {
+        try {
+            String sqlQuery = "SELECT * FROM users WHERE login = ?";
+            return jdbcTemplate.queryForObject(sqlQuery, userRowMapper(), login);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
     private RowMapper<User> userRowMapper() {
         return (rs, rowNum) -> {
             User user = new User();
@@ -162,35 +219,5 @@ public class DbUserStorageImpl implements DbUserStorage {
 
             return user;
         };
-    }
-
-    public void populateFriendStatusMap(User user) {
-        String sql = "SELECT friend_id FROM friend_list WHERE user_id = ?";
-        HashMap<Integer, Boolean> friendStatusMap = new HashMap<>();
-
-        jdbcTemplate.query(sql, new Object[]{user.getId()}, (rs) -> {
-            while (rs.next()) {
-                Integer friendId = rs.getInt("friend_id");
-                boolean isMutual = checkMutualFriendship(user.getId(), friendId);
-                friendStatusMap.put(friendId, isMutual);
-            }
-        });
-        user.setFriendshipStatus(friendStatusMap);
-    }
-
-    private boolean checkMutualFriendship(Integer userId1, Integer userId2) {
-        String sql = "SELECT COUNT(*) FROM friend_list WHERE (user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)";
-        int count = jdbcTemplate.queryForObject(sql, new Object[]{userId1, userId2, userId2, userId1}, Integer.class);
-        return count == 2;
-    }
-
-    @Override
-    public void removeUser(Integer id) {
-        jdbcTemplate.update("DELETE FROM users WHERE user_id = ? ", id);
-    }
-
-    @Override
-    public void removeAllUsers() {
-        jdbcTemplate.update("DELETE FROM users");
     }
 }

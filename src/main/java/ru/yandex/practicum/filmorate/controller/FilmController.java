@@ -23,7 +23,7 @@ import java.util.List;
 public class FilmController {
     @Autowired
     private final FilmServiceInterface filmService;
-    private final Logger log = LoggerFactory.getLogger(FilmController.class);
+    private static final Logger log = LoggerFactory.getLogger(FilmController.class);
 
     @GetMapping("/films")
     public List<Film> findAll() {
@@ -121,11 +121,4 @@ public class FilmController {
         return filmService.getAllMpa();
     }
 
-    @ControllerAdvice
-    public class CustomExceptionHandler {
-        @ExceptionHandler(ValidationException.class)
-        public ResponseStatusException handleValidationException(ValidationException ex) {
-            return new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
-        }
-    }
 }

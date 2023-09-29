@@ -33,19 +33,61 @@ public class DbFilmStorageImpl implements DbFilmStorage {
     public DbFilmStorageImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+    public List<Integer> getUserLikes(int filmId) {
+        return jdbcTemplate.query(
+                "SELECT user_id FROM film_likes WHERE film_id = ?", (resultSet, rowNum) ->
+                        resultSet.getInt("user_id"), filmId);
+    }
+    public static Map<String, Object> filmToMap(Film film) {
+        Map<String, Object> values = new HashMap<>();
+        values.put("name", film.getName());
+        values.put("description", film.getDescription());
+        values.put("release_date", film.getReleaseDate());
+        values.put("duration", film.getDuration());
+        values.put("mpa", film.getMpa());
+        values.put("genres", film.getGenres());
+        return values;
+    }
+    public Mpa buildMpa(ResultSet rs, int rowNum) throws SQLException {
+        return new Mpa(rs.getInt("mpa_id"), rs.getString("mpa_name"));
+    }
+    public Set<Genre> getFilmGenres(Integer filmId) {
 
+        SqlRowSet genreRows = jdbcTemplate
+                .queryForRowSet("SELECT genre_id FROM film_genre WHERE film_id = ?", filmId);
+
+        Set<Genre> genres = new TreeSet<>(Comparator.comparing(Genre::getId));
+
+        while (genreRows.next()) {
+            Genre filmGenre =
+                    getGenreById(genreRows.getInt("genre_id"));
+            genres.add(filmGenre);
+
+        }
+        return genres;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void addLike(Integer filmId, Integer userId) {
         jdbcTemplate.update("INSERT INTO film_likes(film_id, user_id) " +
                 "VALUES(?,?)", filmId, userId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void removeLike(Film film, Integer userId) {
         Integer filmId = film.getId();
         jdbcTemplate.update("DELETE FROM film_likes WHERE user_id = ? AND film_id = ?", userId, filmId);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Film> getTopTenFilms(Integer count) {
         String sql = "SELECT *\n" +
@@ -62,6 +104,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Film addFilm(Film film) {
         if (getFilmByName(film.getName()) != null && getFilmByName(film.getName()).equals(film)) {
@@ -109,17 +154,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
 
     }
 
-    public static Map<String, Object> filmToMap(Film film) {
-        Map<String, Object> values = new HashMap<>();
-        values.put("name", film.getName());
-        values.put("description", film.getDescription());
-        values.put("release_date", film.getReleaseDate());
-        values.put("duration", film.getDuration());
-        values.put("mpa", film.getMpa());
-        values.put("genres", film.getGenres());
-        return values;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void removeFilm(Integer id) {
         jdbcTemplate.update("DELETE FROM films WHERE id = ? ", id);
@@ -137,18 +174,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         return genreId;
     }
 
-    private Integer insertOrRetrieveMpaId(String mpaName) {
-        String checkSql = "SELECT id FROM mpa WHERE name = ?";
-        Integer mpaId = jdbcTemplate.queryForObject(checkSql, Integer.class, mpaName);
-
-        if (mpaId == null) {
-            String insertSql = "INSERT INTO mpa (name) VALUES (?) RETURNING id";
-            mpaId = jdbcTemplate.queryForObject(insertSql, Integer.class, mpaName);
-        }
-
-        return mpaId;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Film updateFilm(Film film) {
         String sql = "UPDATE films SET " +
@@ -167,18 +195,27 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         throw new NotFoundException("Фильм с id " + film.getId() + " не найден.");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean deleteAllGenresFromFilm(long filmId) {
         String sql = "DELETE FROM film_genre WHERE film_id = ?";
         return jdbcTemplate.update(sql, filmId) > 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean addGenreToFilm(long filmId, int genreId) {
         String sql = "INSERT INTO film_genre (film_id, genre_id) VALUES (?, ?)";
         return jdbcTemplate.update(sql, filmId, genreId) > 0;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Film> findAllFilms() {
         return jdbcTemplate.query(
@@ -188,6 +225,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     public Film filmBuilder(ResultSet resultSet, int rowNum) throws SQLException {
         Film film = Film.builder()
                 .id(resultSet.getInt("film_id"))
@@ -213,6 +253,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         return film;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Film getFilmById(Integer id) {
         try {
@@ -225,6 +268,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     private Film getFilmByName(String name) {
         try {
             String sqlQuery = "SELECT DISTINCT f.*, m.mpa_name FROM films AS f " +
@@ -236,6 +282,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Genre getGenreById(int id) {
         try {
@@ -246,6 +295,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Mpa getMpaById(int mpaId) {
         try {
@@ -256,35 +308,9 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         }
     }
 
-    private RowMapper<Film> filmRowMapper() {
-        return (rs, rowNum) -> {
-            Film film = new Film();
-
-            Integer id = rs.getInt("film_id");
-            String name = rs.getString("name");
-            String description = rs.getString("description");
-            LocalDateTime releaseDate = rs.getTimestamp("release_date").toLocalDateTime();
-            Integer duration = rs.getInt("duration");
-
-            Integer mpaId = rs.getInt("mpa");
-
-
-            TreeSet<Integer> likes = new TreeSet<>();
-
-            film.setId(id);
-            film.setName(name);
-            film.setDescription(description);
-            film.setReleaseDate(releaseDate.toLocalDate());
-            film.setDuration(duration);
-            Mpa mpa = getMpaById(film.getId());
-
-            film.setMpa(mpa);
-
-
-            return film;
-        };
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Genre> getGenreByFilmId(int id) {
         String sqlQuery = "SELECT g.GENRE_ID, g.NAME FROM film_genre fg " +
@@ -301,47 +327,54 @@ public class DbFilmStorageImpl implements DbFilmStorage {
     }
 
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Genre> getAllGenres() {
         return jdbcTemplate.query("SELECT * FROM genre",
                 this::buildGenre);
     }
-
     public Genre buildGenre(ResultSet rs, int rowNum) throws SQLException {
         return new Genre(rs.getInt("genre_id"), rs.getString("name"));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<Mpa> getAllMpa() {
         return jdbcTemplate.query("SELECT * FROM mpa",
                 this::buildMpa);
     }
 
-    public Mpa buildMpa(ResultSet rs, int rowNum) throws SQLException {
-        return new Mpa(rs.getInt("mpa_id"), rs.getString("mpa_name"));
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void removeAllFilms() {
         jdbcTemplate.update("DELETE FROM films");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Film addFilmGenres(Film film) {
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void removeFilmGenres(int filmId) {
         jdbcTemplate.update("DELETE FROM film_genre WHERE film_id = ?", filmId);
     }
 
-    public List<Integer> getUserLikes(int filmId) {
-        return jdbcTemplate.query(
-                "SELECT user_id FROM film_likes WHERE film_id = ?", (resultSet, rowNum) ->
-                        resultSet.getInt("user_id"), filmId);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Film addFilmLikes(Film film) {
         String sqlQuery = "SELECT user_id " +
@@ -355,22 +388,6 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         film.setLikes(likes);
 
         return film;
-    }
-
-    Set<Genre> getFilmGenres(Integer filmId) {
-
-        SqlRowSet genreRows = jdbcTemplate
-                .queryForRowSet("SELECT genre_id FROM film_genre WHERE film_id = ?", filmId);
-
-        Set<Genre> genres = new TreeSet<>(Comparator.comparing(Genre::getId));
-
-        while (genreRows.next()) {
-            Genre filmGenre =
-                    getGenreById(genreRows.getInt("genre_id"));
-            genres.add(filmGenre);
-
-        }
-        return genres;
     }
 
     private void updateFilmGenreTable(Film film) {
@@ -428,5 +445,44 @@ public class DbFilmStorageImpl implements DbFilmStorage {
                 }
             }
         }
+    }
+    private Integer insertOrRetrieveMpaId(String mpaName) {
+        String checkSql = "SELECT id FROM mpa WHERE name = ?";
+        Integer mpaId = jdbcTemplate.queryForObject(checkSql, Integer.class, mpaName);
+
+        if (mpaId == null) {
+            String insertSql = "INSERT INTO mpa (name) VALUES (?) RETURNING id";
+            mpaId = jdbcTemplate.queryForObject(insertSql, Integer.class, mpaName);
+        }
+
+        return mpaId;
+    }
+    private RowMapper<Film> filmRowMapper() {
+        return (rs, rowNum) -> {
+            Film film = new Film();
+
+            Integer id = rs.getInt("film_id");
+            String name = rs.getString("name");
+            String description = rs.getString("description");
+            LocalDateTime releaseDate = rs.getTimestamp("release_date").toLocalDateTime();
+            Integer duration = rs.getInt("duration");
+
+            Integer mpaId = rs.getInt("mpa");
+
+
+            TreeSet<Integer> likes = new TreeSet<>();
+
+            film.setId(id);
+            film.setName(name);
+            film.setDescription(description);
+            film.setReleaseDate(releaseDate.toLocalDate());
+            film.setDuration(duration);
+            Mpa mpa = getMpaById(film.getId());
+
+            film.setMpa(mpa);
+
+
+            return film;
+        };
     }
 }
