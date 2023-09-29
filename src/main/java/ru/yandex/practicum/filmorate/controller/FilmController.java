@@ -8,14 +8,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.exception.ErrorResponse;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.FilmServiceInterface;
 
 import javax.validation.Valid;
 import java.util.List;
-
 @RestController
 @AllArgsConstructor
 public class FilmController {
@@ -90,6 +92,29 @@ public class FilmController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+    @GetMapping("/genres")
+    public List<Genre> getGenres() {
+        return filmService.getAllGenres();
+    }
+
+    @GetMapping("/mpa/{id}")
+    public Mpa getMpa(@PathVariable int id) {
+        return filmService.getMpa(id);
+    }
+
+    @GetMapping("/mpa")
+    public List<Mpa> getAll() {
+        return filmService.getAllMpa();
+    }
+
+    @ControllerAdvice
+    public class CustomExceptionHandler {
+        @ExceptionHandler(ValidationException.class)
+        public ResponseStatusException handleValidationException(ValidationException ex) {
+            return new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
+
     }
 }
 
