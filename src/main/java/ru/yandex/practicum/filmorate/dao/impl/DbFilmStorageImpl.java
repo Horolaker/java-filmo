@@ -33,11 +33,13 @@ public class DbFilmStorageImpl implements DbFilmStorage {
     public DbFilmStorageImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+
     public List<Integer> getUserLikes(int filmId) {
         return jdbcTemplate.query(
                 "SELECT user_id FROM film_likes WHERE film_id = ?", (resultSet, rowNum) ->
                         resultSet.getInt("user_id"), filmId);
     }
+
     public static Map<String, Object> filmToMap(Film film) {
         Map<String, Object> values = new HashMap<>();
         values.put("name", film.getName());
@@ -48,9 +50,11 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         values.put("genres", film.getGenres());
         return values;
     }
+
     public Mpa buildMpa(ResultSet rs, int rowNum) throws SQLException {
         return new Mpa(rs.getInt("mpa_id"), rs.getString("mpa_name"));
     }
+
     public Set<Genre> getFilmGenres(Integer filmId) {
 
         SqlRowSet genreRows = jdbcTemplate
@@ -335,6 +339,7 @@ public class DbFilmStorageImpl implements DbFilmStorage {
         return jdbcTemplate.query("SELECT * FROM genre",
                 this::buildGenre);
     }
+
     public Genre buildGenre(ResultSet rs, int rowNum) throws SQLException {
         return new Genre(rs.getInt("genre_id"), rs.getString("name"));
     }
@@ -446,6 +451,7 @@ public class DbFilmStorageImpl implements DbFilmStorage {
             }
         }
     }
+
     private Integer insertOrRetrieveMpaId(String mpaName) {
         String checkSql = "SELECT id FROM mpa WHERE name = ?";
         Integer mpaId = jdbcTemplate.queryForObject(checkSql, Integer.class, mpaName);
@@ -457,6 +463,7 @@ public class DbFilmStorageImpl implements DbFilmStorage {
 
         return mpaId;
     }
+
     private RowMapper<Film> filmRowMapper() {
         return (rs, rowNum) -> {
             Film film = new Film();

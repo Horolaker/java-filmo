@@ -25,6 +25,7 @@ public class DbUserStorageImpl implements DbUserStorage {
     public DbUserStorageImpl(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
+
     public void populateFriendStatusMap(User user) {
         String sql = "SELECT friend_id FROM friend_list WHERE user_id = ?";
         HashMap<Integer, Boolean> friendStatusMap = new HashMap<>();
@@ -191,6 +192,7 @@ public class DbUserStorageImpl implements DbUserStorage {
         values.put("birthday", user.getBirthday());
         return values;
     }
+
     private User getUserByLogin(String login) {
         try {
             String sqlQuery = "SELECT * FROM users WHERE login = ?";
@@ -199,6 +201,7 @@ public class DbUserStorageImpl implements DbUserStorage {
             return null;
         }
     }
+
     private RowMapper<User> userRowMapper() {
         return (rs, rowNum) -> {
             User user = new User();
