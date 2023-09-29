@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.controller;
 
-
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +17,13 @@ import ru.yandex.practicum.filmorate.service.FilmServiceInterface;
 
 import javax.validation.Valid;
 import java.util.List;
+
 @RestController
 @AllArgsConstructor
 public class FilmController {
     @Autowired
     private final FilmServiceInterface filmService;
-    private static final Logger log = LoggerFactory.getLogger(FilmController.class);
+    private final Logger log = LoggerFactory.getLogger(FilmController.class);
 
     @GetMapping("/films")
     public List<Film> findAll() {
@@ -41,17 +41,24 @@ public class FilmController {
     }
 
     @PutMapping("/films/{id}/like/{userId}")
-    public ResponseEntity<Film> addLike(@PathVariable Integer id, @PathVariable Integer userId) {
+    public ResponseEntity<Object> addLike(@PathVariable Integer id,
+                                          @PathVariable Integer userId) {
         Film existingFilm = filmService.getFilmById(id);
         if (existingFilm == null) {
-            return ResponseEntity.notFound().build();
+            ErrorResponse errorResponse = new ErrorResponse("Фильм с ID " + id + " не существует.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
-        boolean added = filmService.addLike(id, userId);
-
-        if (added) {
-            return ResponseEntity.ok(existingFilm);
-        } else {
-            return ResponseEntity.badRequest().build();
+        try {
+            boolean added = filmService.addLike(id, userId);
+            if (added) {
+                return ResponseEntity.ok(existingFilm);
+            } else {
+                ErrorResponse errorResponse = new ErrorResponse("Пользователь с ID " + userId + " не найден.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
+        } catch (ValidationException ex) {
+            ErrorResponse errorResponse = new ErrorResponse(ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
     }
 
@@ -93,6 +100,12 @@ public class FilmController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/genres/{id}")
+    public Genre getGenreById(@PathVariable int id) {
+        return filmService.getGenre(id);
+    }
+
     @GetMapping("/genres")
     public List<Genre> getGenres() {
         return filmService.getAllGenres();
@@ -114,7 +127,5 @@ public class FilmController {
         public ResponseStatusException handleValidationException(ValidationException ex) {
             return new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
         }
-
     }
 }
-
